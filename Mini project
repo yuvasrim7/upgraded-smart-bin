@@ -1,0 +1,221 @@
+#Mounting to gdrive to retrive image data data
+
+from google.colab import drive
+drive.mount('/content/gdrive', force_remount=True)
+!unzip "/content/gdrive/MyDrive/archive (5).zip"
+
+import tensorflow as tf
+from tensorflow.keras.layers import Input, Dense, Flatten 
+from tensorflow.keras.models import Model
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.vgg16 import preprocess_input
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.preprocessing import image_dataset_from_directory
+import cv2
+import numpy as np
+import os
+import pandas as pd
+IMAGE_SIZE = [224, 224]
+
+! mkdir image
+
+ls
+! mv TRAIN.1/ image/
+! mv TEST/ image/
+file_path="/content/image" 
+Progressively loading images from file
+
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+# create generator
+datagen = ImageDataGenerator(rescale = 1./255,
+                             shear_range = 0.2,
+                             zoom_range = 0.2,
+                             horizontal_flip = True,
+                             vertical_flip=True,
+                             rotation_range=30)
+# prepare an iterators for each dataset
+train_it = datagen.flow_from_directory('/content/image/TRAIN.1', 
+                                       class_mode='categorical',
+                                       target_size=(224, 224),
+                                       batch_size=2,
+                                       seed=7)
+
+test_it = datagen.flow_from_directory('/content/image/TEST',  
+                                       class_mode='categorical',
+                                       target_size=(224, 224),
+                                       batch_size=2,
+                                       seed=7)
+
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.keras import Sequential
+
+
+
+
+
+Using CN
+
+model = Sequential()
+
+model.add(Conv2D(32,(5,5),padding='valid',activation='relu',input_shape=(224,224,3))
+model.add(MaxPooling2D(pool_size=(4,4))
+
+model.add(Conv2D(32, (5,5),padding='valid',activation='relu',input_shape=(224,224,3)))
+model.add(MaxPooling2D(pool_size=(4,4)))
+
+model.add(Conv2D(32, (5,5),padding='valid',activation='relu',input_shape=(224,224,3)))
+model.add(MaxPooling2D(pool_size=(4,4)))
+
+model.add(Flatten())
+model.add(Dense(128,activation='relu'))
+model.add(Dense(2,activation='softmax'))
+
+from tensorflow.keras.losses import CategoricalCrossentropy
+model.compile(
+  optimizer='adam',
+  loss=CategoricalCrossentropy(),
+  metrics=['accuracy'])
+
+history = model.fit( 
+  train_it,
+  validation_data=test_it,
+  epochs=3)
+
+model.summary()
+
+model.save("model.h5")
+
+
+
+
+
+
+
+
+
+
+
+
+Loading the model
+
+
+from keras.models import load_model
+model = load_model('model.h5')
+
+
+Checking model with external image
+
+
+from keras.preprocessing.image import load_img
+image = load_img('/content/tomatoes (1) (1).png', target_size=(224, 224))
+img = np.array(image)
+img = img / 255.0
+img = img.reshape(1,224,224,3)
+label = model.predict(img)
+l={"Biodegradable":label[0][0],"NON-Biodegradable":label[0][1]}
+def get_key(val):
+    for key, value in l.items():
+         if val == value:
+             return key
+ 
+    return "key doesn't exist"
+
+check=label.max()
+get_key(check)
+
+
+#IMPORTING OPENCV
+
+
+import imutils
+import numpy as np
+import cv2
+from google.colab.patches import cv2_imshow
+from IPython.display import display, Javascript
+from google.colab.output import eval_js
+from base64 import b64decode
+
+import cv2
+
+cam = cv2.VideoCapture(0)
+while cam.isOpened():
+    ret, frame1 = cam.read()
+    if cv2.waitkey(10)==ord('q'):
+      break
+    cv2.imshow('Granny Cam', frame1) 
+def take_photo(filename='photo.jpg', quality=0.8):
+  js = Javascript('''
+    async function takePhoto(quality) {
+      const div = document.createElement('div');
+      const capture = document.createElement('button');
+      capture.textContent = 'Capture';
+      div.appendChild(capture);
+
+      const video = document.createElement('video');
+      video.style.display = 'block';
+      const stream = await navigator.mediaDevices.getUserMedia({video: true});
+
+      document.body.appendChild(div);
+      div.appendChild(video);
+      video.srcObject = stream;
+      await video.play();
+
+      google.colab.output.setIframeHeight(document.documentElement.scrollHeight,true);
+
+      await new Promise((resolve) => capture.onclick = resolve);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      stream.getVideoTracks()[0].stop();
+      div.remove();
+      return canvas.toDataURL('image/jpeg', quality);
+    }
+    ''')
+  display(js)
+  data = eval_js('takePhoto({})'.format(quality))
+  binary = b64decode(data.split(',')[1])
+  with open(filename, 'wb') as f:
+    f.write(binary)
+  return filename 
+CAPTURE IMAGE
+
+
+
+image_file = take_photo()
+
+pip install easygui
+import cv2 #for image processing
+import easygui #to open the filebox
+import numpy as np #to store image
+import imageio #to read image stored at particular path
+import sys
+import matplotlib.pyplot as plt
+import os
+import tkinter as tk
+from tkinter import filedialog
+from tkinter import *
+from PIL import ImageTk, Image
+
+""" fileopenbox opens the box to choose file
+and help us store file path as string """
+def upload():
+    ImagePath=easygui.fileopenbox()
+    from keras.preprocessing.image import load_img
+image = load_img('/content/photo.jpg', target_size=(224, 224))
+img = np.array(image)
+img = img / 255.0
+img = img.reshape(1,224,224,3)
+label = model.predict(img)
+
+l={"Biodegradable":label[0][0],"NON-Biodegradable":label[0][1]}
+def get_key(val):
+    for key, value in l.items():
+         if val == value:
+             return key
+ 
+    return "key doesn't exist"
+
+check=label.max()
+get_key(check) 
